@@ -166,6 +166,8 @@ object TLExpr {
     val searchSize  = search.size
     val replaceSize = replace.size
 
+    // Optimization: count size of the subtrees while folding
+    // to avoid unnecessary comparisons with `search`.
     val (_, result) = fold(expr)(
       (id: TLExpr) => if (id === search) (replaceSize, replace) else (1, id),
       (_, childrenRes) => {
