@@ -1,33 +1,13 @@
 package task2
 
-import cats.syntax.show._
+import cats.syntax.all._
 
 object Testing extends App {
-  val tree = TLExpr.Node(
-    List(
-      TLExpr.Id("a"),
-      TLExpr.Node(
-        List(
-          TLExpr.Id("b"),
-          TLExpr.Node(
-            List(
-              TLExpr.Id("c"),
-              TLExpr.Id("d")
-            )
-          )
-        )
-      )
-    )
-  )
+  val tree    = TLExpr.parse("(a (a ()))").getOrElse(throw new Exception("Failed to parse"))
+  val pattern = TLExpr.parse("(a ())").getOrElse(throw new Exception("Failed to parse"))
+  val replace = TLExpr.parse("()").getOrElse(throw new Exception("Failed to parse"))
 
-  println(TLExpr.bfs(tree).map(_.show).mkString("\n"))
-//  val str = "aaabbb"
-//
-//  val parser = Parser.rep(Parser.char('a'))
-//
-//  val ctx = Parser.Ctx(str, 0)
-//
-//  val result = parser.parse(ctx)
-//
-//  println(result)
+  val result = TLExpr.replace(tree)(pattern, replace)
+
+  println(result.show)
 }

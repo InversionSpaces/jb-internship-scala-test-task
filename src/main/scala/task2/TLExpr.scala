@@ -1,15 +1,41 @@
 package task2
 
 import cats.{ Eq, Show }
+import cats.syntax.all._
 
 import scala.annotation.tailrec
 
 enum TLExpr {
   case Id(name: String)
   case Node(children: List[TLExpr])
+
+  def fold[B](idCase: Id => B, nodeCase: (Node, List[B]) => B): B =
+    TLExpr.fold(this)(idCase, nodeCase)
+
+  def bfs: Iterator[TLExpr] = TLExpr.bfs(this)
+
+  def size: Int = TLExpr.size(this)
+
+  def replace(search: TLExpr, replace: TLExpr): TLExpr =
+    TLExpr.replace(this)(search, replace)
 }
 
 object TLExpr {
+  def idParser: Parser[Id] =
+    (Parser.whitespace *> Parser.alphanum <* Parser.whitespace).map(Id.apply)
+
+  def nodeParser: Parser[Node] = (
+    Parser.whitespace *> Parser.char('(') *> Parser.whitespace *>
+      Parser.rep(parser) <* Parser.char(')') <* Parser.whitespace
+  ).map(Node.apply)
+
+  def parser: Parser[TLExpr] = Parser.defer(
+    Parser.or(idParser, nodeParser)
+  )
+
+  def parse(input: String): Either[Parser.Error, TLExpr] =
+    Parser.parseAll(parser, input)
+
   def fold[B](expr: TLExpr)(
       idCase: Id => B,
       nodeCase: (Node, List[B]) => B
@@ -37,6 +63,34 @@ object TLExpr {
       Iterator.single[TLExpr],
       (n, children) => Iterator.single(n).concat(children.iterator.flatten)
     )
+
+  def size(expr: TLExpr): Int =
+    fold(expr)(
+      _ => 1,
+      (_, children) => children.sum + 1
+    )
+
+  def replace(expr: TLExpr)(
+      search: TLExpr,
+      replace: TLExpr
+  ): TLExpr = {
+    val searchSize  = search.size
+    val replaceSize = replace.size
+
+    val (_, result) = fold(expr)(
+      (id: TLExpr) => if (id === search) (replaceSize, replace) else (1, id),
+      (_, childrenRes) => {
+        val (sizes, children) = childrenRes.unzip
+        val newSize           = sizes.sum + 1
+        val newNode           = Node(children)
+
+        if (newSize == searchSize && newNode === search) (replaceSize, replace)
+        else (newSize, newNode)
+      }
+    )
+
+    result
+  }
 
   given Eq[TLExpr] with {
     def eqv(left: TLExpr, right: TLExpr): Boolean =
