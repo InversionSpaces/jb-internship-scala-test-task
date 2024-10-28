@@ -4,5 +4,6 @@ ThisBuild / scalaVersion := "3.6.1"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "JBInternshipTask"
+    name := "JBInternshipTask",
+    libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.17.1" % Test
   )
